@@ -10,7 +10,16 @@
     // 首屏前定主题，避免刷新时闪一下深色
     (function () {
       try {
-        var saved = localStorage.getItem('theme');
+        var saved = null;
+        try { saved = localStorage.getItem('theme'); } catch (e) {}
+        if (saved !== 'light' && saved !== 'dark') {
+          var m = document.cookie.match(/(?:^|;\s*)theme=(dark|light)/);
+          saved = m ? m[1] : null;
+        }
+        if (!saved) {
+          var h = (location.hash || '').match(/theme=(dark|light)/);
+          if (h) saved = h[1];
+        }
         if (!saved && window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) saved = 'light';
         document.documentElement.setAttribute('data-theme', saved || 'dark');
       } catch (e) {

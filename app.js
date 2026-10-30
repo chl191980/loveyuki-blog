@@ -2,12 +2,43 @@
 const html = document.documentElement;
 const themeToggle = document.querySelector('.theme-toggle');
 
-// 存储可能被禁用（无痕 / file:// / 隐私设置），读写都要兜底
+// 存储可能被禁用（无痕 / file:// / 隐私设置）。四层兜底：localStorage → cookie → URL hash → 内存
+let memoryTheme = null;
+
 function readTheme() {
-  try { return localStorage.getItem('theme'); } catch (e) { return null; }
+  try {
+    const v = localStorage.getItem('theme');
+    if (v === 'light' || v === 'dark') return v;
+  } catch (e) { /* 被禁，继续 */ }
+  try {
+    const m = document.cookie.match(/(?:^|;\s*)theme=(dark|light)/);
+    if (m) return m[1];
+  } catch (e) { /* 被禁 */ }
+  const h = (location.hash || '').match(/theme=(dark|light)/);
+  if (h) return h[1];
+  return memoryTheme;
 }
+
 function saveTheme(value) {
-  try { localStorage.setItem('theme', value); } catch (e) { /* 忽略：不影响本次切换 */ }
+  memoryTheme = value;
+
+  let stored = false;
+  try {
+    localStorage.setItem('theme', value);
+    stored = localStorage.getItem('theme') === value;
+  } catch (e) { /* 被禁 */ }
+
+  if (!stored) {
+    try {
+      document.cookie = 'theme=' + value + ';path=/;max-age=31536000;SameSite=Lax';
+      stored = document.cookie.indexOf('theme=' + value) !== -1;
+    } catch (e) { /* 被禁 */ }
+  }
+
+  // 两种存储都写不进去时，把主题挂到 URL 上；刷新时 hash 还在
+  if (!stored) {
+    try { history.replaceState(null, '', '#theme=' + value); } catch (e) { /* 忽略 */ }
+  }
 }
 
 function applyTheme(theme) {
