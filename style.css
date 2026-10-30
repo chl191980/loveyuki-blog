@@ -325,7 +325,7 @@ section { padding-block: 48px; scroll-margin-top: 28px; }
   width: 100%;
   padding: 0;
   border: 0;
-  background: #191827;
+  background: var(--clr-surface-hover);
   cursor: pointer;
   font: inherit;
   color: inherit;

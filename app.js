@@ -1,16 +1,30 @@
 // 主题切换
-const themeToggle = document.querySelector('.theme-toggle');
 const html = document.documentElement;
+const themeToggle = document.querySelector('.theme-toggle');
 
-// 读取保存的主题
-const savedTheme = localStorage.getItem('theme') || 'dark';
-html.setAttribute('data-theme', savedTheme);
+// 存储可能被禁用（无痕 / file:// / 隐私设置），读写都要兜底
+function readTheme() {
+  try { return localStorage.getItem('theme'); } catch (e) { return null; }
+}
+function saveTheme(value) {
+  try { localStorage.setItem('theme', value); } catch (e) { /* 忽略：不影响本次切换 */ }
+}
+
+function applyTheme(theme) {
+  html.setAttribute('data-theme', theme);
+  const isLight = theme === 'light';
+  themeToggle.setAttribute('aria-pressed', String(isLight));
+  themeToggle.setAttribute('aria-label', isLight ? '切换到夜间模式' : '切换到日间模式');
+  themeToggle.setAttribute('title', isLight ? '切换到夜间模式' : '切换到日间模式');
+}
+
+const systemLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+applyTheme(readTheme() || (systemLight ? 'light' : 'dark'));
 
 themeToggle.addEventListener('click', () => {
-  const currentTheme = html.getAttribute('data-theme');
-  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-  html.setAttribute('data-theme', newTheme);
-  localStorage.setItem('theme', newTheme);
+  const next = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+  applyTheme(next);
+  saveTheme(next);
 });
 
 // 滚动淡入动画
